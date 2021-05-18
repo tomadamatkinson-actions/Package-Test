@@ -1,45 +1,37 @@
 name: Publish Image
 
+
 on:
   workflow_dispatch:
-    inputs:
-        tag:
-          description: "Specify tag to use with image"
-          required: true
-          default: "latest"
 
 env:
   IMAGE_NAME: package-test
 
 jobs:
-  push:
+  build:
     runs-on: ubuntu-latest
     permissions:
       packages: write
       contents: read
 
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout Repository
+        uses: actions/checkout@v2
 
-      - name: Build image
-        run: docker build . --file Dockerfile --tag $IMAGE_NAME
+      - name: Build Image
+        run: cd .github/docker && docker build --tag $IMAGE_NAME .
 
-      - name: Log into registry
+      - name: Login to GitHub Container Registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-      - name: Push image
+      - name: Push Image
         run: |
           IMAGE_ID=ghcr.io/${{ github.repository_owner }}/$IMAGE_NAME
-
-          # Change all uppercase to lowercase
           IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
-          # Strip git ref prefix from version
-          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
-          # Strip "v" prefix from tag name
-          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
-          # Use Docker `latest` tag convention
-          [ "$VERSION" == "master" ] && VERSION=latest
           echo IMAGE_ID=$IMAGE_ID
+
+          VERSION=latest
           echo VERSION=$VERSION
+
           docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
           docker push $IMAGE_ID:$VERSION
