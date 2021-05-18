@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
         tag:
-        description: "Specify tag to use with image"
-        required: true
-        default: "latest"
+          description: "Specify tag to use with image"
+          required: true
+          default: "latest"
 
 env:
   IMAGE_NAME: package-test
